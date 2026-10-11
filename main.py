@@ -1,52 +1,44 @@
-"""Tiny terminal task manager with JSON persistence."""
-import json
-import os
-import sys
+"""Terminal Task Manager: add, list, mark done, remove tasks."""
+import argparse, sys
 
-FILE = "tasks.json"
+tasks = []
 
+def add_task(desc):
+    tasks.append({'id': len(tasks)+1, 'desc': desc, 'done': False})
 
-def load():
-    if not os.path.exists(FILE):
-        return []
-    with open(FILE) as f:
-        return json.load(f)
+def list_tasks():
+    for t in tasks:
+        status = '✓' if t['done'] else '✗'
+        print(f"{t['id']}. [{status}] {t['desc']}")
 
+def done_task(tid):
+    for t in tasks:
+        if t['id'] == tid:
+            t['done'] = True
+            return
+    print(f"No task with id {tid}")
 
-def save(tasks):
-    with open(FILE, "w") as f:
-        json.dump(tasks, f, indent=2)
+def remove_task(tid):
+    global tasks
+    tasks = [t for t in tasks if t['id'] != tid]
 
-
-def show(tasks):
-    if not tasks:
-        print("No tasks.")
-    for i, t in enumerate(tasks, 1):
-        print(f"{i:>3}. [{'x' if t['done'] else ' '}] {t['text']}")
-
-
-def main(argv):
-    tasks = load()
-    cmd = argv[0] if argv else "list"
-    if cmd == "list":
-        show(tasks)
-    elif cmd == "add":
-        tasks.append({"text": " ".join(argv[1:]), "done": False})
-        save(tasks)
-        show(tasks)
-    elif cmd == "done":
-        tasks[int(argv[1]) - 1]["done"] = True
-        save(tasks)
-        show(tasks)
-    elif cmd == "rm":
-        del tasks[int(argv[1]) - 1]
-        save(tasks)
-        show(tasks)
-    else:
-        print("usage: tasks [list | add TEXT | done N | rm N]")
-        return 1
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+def main():
+    parser = argparse.ArgumentParser(prog='taskmanager')
+    sub = parser.add_subparsers(dest='cmd')
+    sub.add_parser('list')
+    add_sub = sub.add_parser('add')
+    add_sub.add_argument('desc', nargs='+')
+    done_sub = sub.add_parser('done')
+    done_sub.add_argument('id', type=int)
+    rem_sub = sub.add_parser('remove')
+    rem_sub.add_argument('id', type=int)
+    if len(sys.argv)==1:
+        parser.print_help()
+        return
+    args = parser.parse_args()
+    if args.cmd=='add':
+        add_task(' '.join(args.desc))
+    elif args.cmd=='list':
+        list_tasks()
+    elif args.cmd=='done':
+        done_task
